@@ -25,10 +25,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Appel setContent pour l'interface Compose
         setContent {
             SingWithMeTheme {
-                // Appel de la fonction Composable qui gère l'UI
                 MainScreen()
             }
         }
@@ -40,44 +38,47 @@ fun MainScreen() {
     val context = LocalContext.current
     val playlistCache = remember { PlaylistCache(context) }
 
-    // Variable d'état pour la playlist
+    // Mutable states for tracks, offline mode, and errors
     var tracks by remember { mutableStateOf<List<Track>?>(null) }
     var isOffline by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        // Charge d'abord les données depuis le cache
-        val cachedTracks = playlistCache.getPlaylist()
-        if (cachedTracks != null) {
-            tracks = cachedTracks
-            isOffline = true // Indique que nous utilisons des données hors-ligne
-        }
-
-        // Ensuite, essayez de charger depuis Internet
         try {
+            // Load cached tracks
+            val cachedTracks = playlistCache.getPlaylist()
+            if (cachedTracks != null) {
+                tracks = cachedTracks
+                isOffline = true
+                Log.d("MainScreen", "Loaded cached tracks: ${cachedTracks.size}")
+            }
+
+            // Fetch tracks from API
             val url = "https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/playlist.json"
-            val playlistFetcher = PlaylistFetcher()
+            val playlistFetcher = PlaylistFetcher(context) // Pass context
             val fetchedTracks = withContext(Dispatchers.IO) {
                 playlistFetcher.fetchPlaylistFromUrl(url)
             }
             if (fetchedTracks != null) {
                 tracks = fetchedTracks
-                isOffline = false // Nous avons des données en ligne
-                playlistCache.savePlaylist(fetchedTracks) // Met à jour le cache
+                isOffline = false
+                playlistCache.savePlaylist(fetchedTracks)
+                Log.d("MainScreen", "Fetched tracks: ${fetchedTracks.size}")
+            } else {
+                errorMessage = "Failed to fetch playlist."
             }
         } catch (e: Exception) {
-            // Gérer les erreurs réseau, les logs suffisent pour ce cas
+            errorMessage = "Error fetching playlist: ${e.message}"
             Log.e("MainScreen", "Error fetching playlist", e)
         }
     }
 
-    // Affiche les données ou un indicateur de chargement
-    if (tracks != null) {
-        PlaylistScreen(tracks = tracks!!, isOffline = isOffline)
-    } else {
-        LoadingScreen()
+    when {
+        tracks != null -> PlaylistScreen(tracks = tracks!!, isOffline = isOffline)
+        errorMessage != null -> ErrorScreen(errorMessage!!)
+        else -> LoadingScreen()
     }
 }
-
 
 @Composable
 fun PlaylistScreen(tracks: List<Track>, isOffline: Boolean) {
@@ -112,10 +113,8 @@ fun PlaylistScreen(tracks: List<Track>, isOffline: Boolean) {
     }
 }
 
-
 @Composable
 fun LoadingScreen() {
-    // Afficher un message ou une animation de chargement
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -124,16 +123,16 @@ fun LoadingScreen() {
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun PreviewMainScreen() {
-    SingWithMeTheme {
-        MainScreen()
+fun ErrorScreen(message: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(16.dp)
+        )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewLoadingScreen() {
-    LoadingScreen()
 }
