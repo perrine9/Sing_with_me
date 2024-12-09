@@ -1,5 +1,7 @@
 package fr.enssat.singwithme.Imane_Perrine.data
 
+import android.content.Context
+import android.util.Log
 import com.google.gson.stream.JsonReader
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -7,6 +9,7 @@ import java.io.InputStreamReader
 import okhttp3.Cache
 import java.io.File
 import java.io.FileOutputStream
+
 
 data class Track(
     val name: String,
@@ -16,7 +19,7 @@ data class Track(
     val mp3Path: String?
 )
 
-class PlaylistFetcher {
+class PlaylistFetcher(private val context: Context)  {
 
 
     fun fetchPlaylistFromUrl(urlString: String): List<Track>? {
@@ -37,7 +40,8 @@ class PlaylistFetcher {
                 reader.endArray()  // Fin du tableau
                 tracks
             } else {
-                null  // Retourner null si la requête échoue
+                Log.e("PlaylistFetcher", "Failed to fetch playlist: ${response.code}")
+                null
             }
         }
     }
@@ -65,16 +69,21 @@ class PlaylistFetcher {
 
         val isLocked = locked ?: false
 
-
         reader.endObject()  // Fin de l'objet "track"
         if (!isLocked) {
             path?.let {
                 val lyricsPath = it // Utilise "path" pour les paroles
                 mp3path = it.removeSuffix(".md") + ".mp3" // Génère le chemin pour le fichier MP3
 
-                // Télécharger les fichiers
-                downloadFile("https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/$lyricsPath", "$name-lyrics.md")
-                downloadFile("https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/$mp3path", "$name.mp3")
+                // Télécharger les fichiers après avoir supprimé les anciens
+                downloadFile(
+                    "https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/$lyricsPath",
+                    "$name-lyrics.md"
+                )
+                downloadFile(
+                    "https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/$mp3path",
+                    "$name.mp3"
+                )
             }
         }
         return Track(name, artist, isLocked, path, mp3path)
@@ -82,13 +91,15 @@ class PlaylistFetcher {
 
 
     fun downloadFile(url: String, fileName: String) {
-
         val client = OkHttpClient()
         val request = Request.Builder().url(url).build()
 
         client.newCall(request).execute().use { response ->
             if (response.isSuccessful) {
-                val file = File("downloads", fileName) //
+                val downloadsDir = File(context.filesDir, "downloads")
+                if (!downloadsDir.exists()) downloadsDir.mkdirs()
+                val file = File(downloadsDir, fileName)
+
                 file.parentFile?.mkdirs()
 
                 response.body?.byteStream()?.use { inputStream ->
@@ -96,16 +107,15 @@ class PlaylistFetcher {
                         inputStream.copyTo(outputStream)
                     }
                 }
-                println("Downloaded: $fileName")
+                Log.d("DownloadFile", "File saved at: ${file.absolutePath}")
             } else {
-                println("Failed to download: $url")
+                Log.e("DownloadFile", "Failed to download: $url")
             }
         }
     }
-
 }
 
-
+/*
 fun main() {
     val url = "https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/playlist.json" // URL à remplacer si besoin
     val playlistFetcher = PlaylistFetcher()
@@ -116,7 +126,7 @@ fun main() {
         println("Lyrics Path: ${track.lyricsPath}")
         println("MP3 Path: ${track.mp3Path}")
     }
-}
+} */
 
 
 /*
