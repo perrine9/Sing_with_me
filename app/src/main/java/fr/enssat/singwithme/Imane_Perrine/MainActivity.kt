@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import fr.enssat.singwithme.Imane_Perrine.data.PlaylistFetcher
@@ -18,6 +19,7 @@ import fr.enssat.singwithme.Imane_Perrine.data.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import fr.enssat.singwithme.Imane_Perrine.ui.theme.SingWithMeTheme
+import fr.enssat.singwithme.Imane_Perrine.data.PlaylistCache
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,52 +37,81 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current
+    val playlistCache = remember { PlaylistCache(context) }
+
     // Variable d'état pour la playlist
     var tracks by remember { mutableStateOf<List<Track>?>(null) }
+    var isOffline by remember { mutableStateOf(false) }
 
-    // Utilisation d'une Coroutine pour effectuer l'appel réseau dans un thread de fond
     LaunchedEffect(Unit) {
-        // Utilisation de withContext pour exécuter l'appel réseau sur le thread IO
-        tracks = withContext(Dispatchers.IO) {
+        // Charge d'abord les données depuis le cache
+        val cachedTracks = playlistCache.getPlaylist()
+        if (cachedTracks != null) {
+            tracks = cachedTracks
+            isOffline = true // Indique que nous utilisons des données hors-ligne
+        }
+
+        // Ensuite, essayez de charger depuis Internet
+        try {
             val url = "https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/playlist.json"
             val playlistFetcher = PlaylistFetcher()
-            playlistFetcher.fetchPlaylistFromUrl(url)
+            val fetchedTracks = withContext(Dispatchers.IO) {
+                playlistFetcher.fetchPlaylistFromUrl(url)
+            }
+            if (fetchedTracks != null) {
+                tracks = fetchedTracks
+                isOffline = false // Nous avons des données en ligne
+                playlistCache.savePlaylist(fetchedTracks) // Met à jour le cache
+            }
+        } catch (e: Exception) {
+            // Gérer les erreurs réseau, les logs suffisent pour ce cas
+            Log.e("MainScreen", "Error fetching playlist", e)
         }
     }
 
-    // Si la playlist est chargée, afficher l'écran avec les boutons
+    // Affiche les données ou un indicateur de chargement
     if (tracks != null) {
-        PlaylistScreen(tracks = tracks!!)
+        PlaylistScreen(tracks = tracks!!, isOffline = isOffline)
     } else {
-        // Affichage d'un message ou d'un indicateur de chargement tant que les données sont nulles
         LoadingScreen()
     }
 }
 
+
 @Composable
-fun PlaylistScreen(tracks: List<Track>) {
-    // Affichage d'une liste de titres sous forme de boutons
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        items(tracks) { track ->
-            // Chaque titre est un bouton
-            Button(
-                onClick = {
-                    // Action à effectuer lorsque le bouton est cliqué
-                    Log.d("MainActivity", "Track clicked: ${track.name}")
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Text(text = track.name)
+fun PlaylistScreen(tracks: List<Track>, isOffline: Boolean) {
+    Column {
+        if (isOffline) {
+            Text(
+                text = "Mode hors ligne - Certaines fonctionnalités peuvent être limitées",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            items(tracks) { track ->
+                Button(
+                    onClick = {
+                        Log.d("MainActivity", "Track clicked: ${track.name}")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    enabled = !track.locked
+                ) {
+                    Text(text = track.name)
+                }
             }
         }
     }
 }
+
 
 @Composable
 fun LoadingScreen() {
