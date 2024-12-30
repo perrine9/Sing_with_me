@@ -20,39 +20,48 @@ data class Track(
 class PlaylistFetcher(private val context: Context) {
 
     fun fetchPlaylistFromUrl(urlString: String): List<Track>? {
-        val client = OkHttpClient()
-        val request = Request.Builder().url(urlString).build()
+        return try {
+            val client = OkHttpClient()
+            val request = Request.Builder().url(urlString).build()
 
-        client.newCall(request).execute().use { response ->
-            return if (response.isSuccessful) {
-                val reader = JsonReader(InputStreamReader(response.body?.byteStream()))
-                reader.beginArray()
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val reader = JsonReader(InputStreamReader(response.body?.byteStream()))
+                    reader.beginArray()
 
-                val tracks = mutableListOf<Track>()
-                while (reader.hasNext()) {
-                    tracks.add(readTrack(reader))
+                    val tracks = mutableListOf<Track>()
+                    while (reader.hasNext()) {
+                        tracks.add(readTrack(reader))
+                    }
+
+                    reader.endArray()
+                    tracks
+                } else {
+                    Log.e("PlaylistFetcher", "Failed to fetch playlist: ${response.code}")
+                    null
                 }
-
-                reader.endArray()
-                tracks
-            } else {
-                Log.e("PlaylistFetcher", "Failed to fetch playlist: ${response.code}")
-                null
             }
+        } catch (e: Exception) {
+            Log.e("PlaylistFetcher", "Error fetching playlist: ${e.message}", e)
+            null
         }
     }
+
+
+    fun normalizeFileName(fileName: String): String {
+        return fileName.replace(" ", "")
+    }
+
 
     private fun readTrack(reader: JsonReader): Track {
         var name = ""
         var artist = ""
         var locked: Boolean? = null
         var path: String? = null
-        var mp3path: String? = null
 
         reader.beginObject()
         while (reader.hasNext()) {
-            val fieldName = reader.nextName()
-            when (fieldName) {
+            when (reader.nextName()) {
                 "name" -> name = reader.nextString()
                 "artist" -> artist = reader.nextString()
                 "locked" -> locked = reader.nextBoolean()
@@ -63,44 +72,132 @@ class PlaylistFetcher(private val context: Context) {
         reader.endObject()
 
         val isLocked = locked ?: false
-        if (!isLocked) {
-            path?.let {
-                val lyricsPath = it
-                mp3path = it.removeSuffix(".md") + ".mp3"
+        var mp3Path: String? = null
 
-                // Download files
-                downloadFile("https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/$lyricsPath", "$name-lyrics.md")
-                downloadFile("https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/$mp3path", "$name.mp3")
-            }
+        if (!isLocked && path != null) {
+            // Construct URLs for lyrics and mp3
+            val lyricsUrl = "https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/$path"
+            mp3Path = path.replace(".md", ".mp3")
+            val mp3Url = lyricsUrl.replace(".md", ".mp3")
+
+            // Download files
+            downloadFile(lyricsUrl, path)
+            downloadFile(mp3Url, mp3Path)
         }
-        return Track(name, artist, isLocked, path, mp3path)
+
+        return Track(name, artist, isLocked, path, mp3Path)
     }
 
-    private fun downloadFile(url: String, fileName: String) {
-        val client = OkHttpClient()
-        val request = Request.Builder().url(url).build()
 
-        client.newCall(request).execute().use { response ->
-            if (response.isSuccessful) {
-                val downloadsDir = File(context.filesDir, "downloads")
-                if (!downloadsDir.exists()) downloadsDir.mkdirs()
 
-                val file = File(downloadsDir, fileName)
-                if (!file.exists()) file.createNewFile()
 
-                response.body?.byteStream()?.use { inputStream ->
-                    FileOutputStream(file).use { outputStream ->
-                        inputStream.copyTo(outputStream)
+
+    fun readLyrics(path: String): String {
+        val file = File(context.filesDir, "downloads/$path")
+        return if (file.exists()) {
+            file.readText() // Retourne le contenu des paroles
+        } else {
+            Log.w("PlaylistFetcher", "File not found: $path")
+            "Paroles introuvables."
+        }
+    }
+
+
+    fun parseLyrics(fileContent: String): List<KaraokeLine> {
+        val regex = Regex("""\{\s*(\d+):(\d+)\s*\}(.*?)(?=\{\s*\d+:\d+\s*\}|$)""")
+        val lines = mutableListOf<KaraokeLine>()
+        var previousEndTime: Float? = null
+
+        fileContent.lines().forEachIndexed { index, line ->
+            if (line.startsWith("#") || line.isBlank()) {
+                Log.d("parseLyrics", "Ignoring metadata or empty line: $line")
+                return@forEachIndexed
+            }
+
+            val matches = regex.findAll(line)
+            matches.forEachIndexed { matchIndex, match ->
+                val groups = match.groupValues
+                val minutes = groups[1].toIntOrNull()
+                val seconds = groups[2].toIntOrNull()
+                val text = groups[3].trim()
+
+                if (minutes != null && seconds != null) {
+                    val startTime = (minutes * 60 + seconds).toFloat()
+
+                    // Determine endTime: use next match's startTime or default to 5 seconds
+                    val endTime = if (matchIndex + 1 < matches.count()) {
+                        val nextMatch = matches.elementAt(matchIndex + 1)
+                        val nextMinutes = nextMatch.groupValues[1].toIntOrNull()
+                        val nextSeconds = nextMatch.groupValues[2].toIntOrNull()
+                        if (nextMinutes != null && nextSeconds != null) {
+                            (nextMinutes * 60 + nextSeconds).toFloat()
+                        } else {
+                            startTime + 5f
+                        }
+                    } else if (index + 1 < fileContent.lines().size) {
+                        val nextLine = fileContent.lines()[index + 1]
+                        val nextLineMatch = regex.find(nextLine)
+                        if (nextLineMatch != null) {
+                            val nextMinutes = nextLineMatch.groupValues[1].toIntOrNull()
+                            val nextSeconds = nextLineMatch.groupValues[2].toIntOrNull()
+                            if (nextMinutes != null && nextSeconds != null) {
+                                (nextMinutes * 60 + nextSeconds).toFloat()
+                            } else {
+                                startTime + 5f
+                            }
+                        } else {
+                            startTime + 5f
+                        }
+                    } else {
+                        startTime + 5f
+                    }
+
+                    if (endTime > startTime) {
+                        lines.add(KaraokeLine(startTime, endTime, text))
+                        previousEndTime = endTime
+                    } else {
+                        Log.w("parseLyrics", "Skipping invalid segment with startTime=$startTime and endTime=$endTime: $line")
+                    }
+                } else {
+                    Log.w("parseLyrics", "Failed to parse timestamp: $line")
+                }
+            }
+        }
+
+        return lines
+    }
+
+
+    fun downloadFile(url: String, path: String) {
+        val downloadsDir = File(context.filesDir, "downloads")
+        val file = File(downloadsDir, path)
+
+        // Crée les répertoires parents si nécessaires
+        file.parentFile?.mkdirs()
+
+        if (file.exists()) {
+            Log.d("PlaylistFetcher", "File already exists at: ${file.absolutePath}")
+        } else {
+            try {
+                // Télécharge et sauvegarde le fichier
+                OkHttpClient().newCall(Request.Builder().url(url).build()).execute().use { response ->
+                    response.body?.byteStream()?.use { inputStream ->
+                        file.outputStream().use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
                     }
                 }
-
-                Log.d("DownloadFile", "File saved at: ${file.absolutePath}")
-            } else {
-                Log.e("DownloadFile", "Failed to download: $url")
+                Log.d("PlaylistFetcher", "File successfully saved at: ${file.absolutePath}")
+            } catch (e: Exception) {
+                Log.e("PlaylistFetcher", "Error saving file at: ${file.absolutePath}, Error: ${e.message}")
             }
         }
     }
+
+
 }
+
+
 
 
 

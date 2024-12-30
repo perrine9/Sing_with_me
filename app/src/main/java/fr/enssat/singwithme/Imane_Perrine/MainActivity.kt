@@ -12,114 +12,111 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import fr.enssat.singwithme.Imane_Perrine.data.PlaylistFetcher
-import fr.enssat.singwithme.Imane_Perrine.data.Track
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import fr.enssat.singwithme.Imane_Perrine.ui.theme.SingWithMeTheme
 import fr.enssat.singwithme.Imane_Perrine.data.PlaylistCache
+import fr.enssat.singwithme.Imane_Perrine.data.Track
+import fr.enssat.singwithme.Imane_Perrine.Player.PlayerScreen
+import fr.enssat.singwithme.Imane_Perrine.ui.theme.SingWithMeTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.Composable
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             SingWithMeTheme {
-                MainScreen()
+                AppNavigation()
             }
         }
     }
 }
 
 @Composable
-fun MainScreen() {
+fun AppNavigation() {
+    val navController = rememberNavController()
     val context = LocalContext.current
+    val playlistFetcher = remember { PlaylistFetcher(context) }
     val playlistCache = remember { PlaylistCache(context) }
 
-    // Mutable states for tracks, offline mode, and errors
     var tracks by remember { mutableStateOf<List<Track>?>(null) }
-    var isOffline by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
+        // Fetch cached or online playlist
         try {
-            // Load cached tracks
             val cachedTracks = playlistCache.getPlaylist()
             if (cachedTracks != null) {
                 tracks = cachedTracks
-                isOffline = true
-                Log.d("MainScreen", "Loaded cached tracks: ${cachedTracks.size}")
+                Log.d("MainActivity", "Loaded cached playlist: ${cachedTracks.size}")
             }
 
-            // Fetch tracks from API
-            val url = "https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/playlist.json"
-            val playlistFetcher = PlaylistFetcher(context) // Pass context
             val fetchedTracks = withContext(Dispatchers.IO) {
-                playlistFetcher.fetchPlaylistFromUrl(url)
+                playlistFetcher.fetchPlaylistFromUrl("https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/playlist.json")
             }
             if (fetchedTracks != null) {
                 tracks = fetchedTracks
-                isOffline = false
                 playlistCache.savePlaylist(fetchedTracks)
-                Log.d("MainScreen", "Fetched tracks: ${fetchedTracks.size}")
             } else {
                 errorMessage = "Failed to fetch playlist."
             }
         } catch (e: Exception) {
-            errorMessage = "Error fetching playlist: ${e.message}"
-            Log.e("MainScreen", "Error fetching playlist", e)
+            errorMessage = "Error: ${e.message}"
         }
     }
 
-    when {
-        tracks != null -> PlaylistScreen(tracks = tracks!!, isOffline = isOffline)
-        errorMessage != null -> ErrorScreen(errorMessage!!)
-        else -> LoadingScreen()
-    }
-}
-
-@Composable
-fun PlaylistScreen(tracks: List<Track>, isOffline: Boolean) {
-    Column {
-        if (isOffline) {
-            Text(
-                text = "Mode hors ligne - Certaines fonctionnalités peuvent être limitées",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(16.dp)
-            )
+    NavHost(navController = navController, startDestination = "playlist") {
+        composable("playlist") {
+            if (tracks != null) {
+                PlaylistScreen(tracks!!, onTrackClick = { track ->
+                    navController.navigate("player/${track.name}")
+                })
+            } else if (errorMessage != null) {
+                ErrorScreen(errorMessage!!)
+            } else {
+                LoadingScreen()
+            }
         }
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            items(tracks) { track ->
-                Button(
-                    onClick = {
-                        Log.d("MainActivity", "Track clicked: ${track.name}")
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    enabled = !track.locked
-                ) {
-                    Text(text = track.name)
-                }
+        composable(
+            "player/{trackName}",
+            arguments = listOf(navArgument("trackName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val trackName = backStackEntry.arguments?.getString("trackName")
+            val selectedTrack = tracks?.find { it.name == trackName }
+            if (selectedTrack != null) {
+                Log.d("MainActivity", "Track found: $selectedTrack")
+                PlayerScreen(track = selectedTrack)
+            } else {
+                ErrorScreen("Track not found.")
             }
         }
     }
 }
 
 @Composable
-fun LoadingScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+fun PlaylistScreen(tracks: List<Track>, onTrackClick: (Track) -> Unit) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        CircularProgressIndicator()
+        items(tracks) { track ->
+            Button(
+                onClick = { onTrackClick(track) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                enabled = !track.locked
+            ) {
+                Text(text = "${track.name} - ${track.artist}")
+            }
+        }
     }
 }
 
@@ -134,5 +131,15 @@ fun ErrorScreen(message: String) {
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(16.dp)
         )
+    }
+}
+
+@Composable
+fun LoadingScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
     }
 }
