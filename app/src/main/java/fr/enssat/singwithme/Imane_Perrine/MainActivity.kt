@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import kotlinx.coroutines.delay
 
 
 class MainActivity : ComponentActivity() {
@@ -78,7 +80,10 @@ fun AppNavigation() {
         }
     }
 
-    NavHost(navController = navController, startDestination = "playlist") {
+    NavHost(navController = navController, startDestination = "splash") {
+        composable("splash") {
+            SplashScreen(onNavigateToPlaylist = { navController.navigate("playlist") })
+        }
         composable("playlist") {
             if (tracks != null) {
                 PlaylistScreen(tracks!!, onTrackClick = { track ->
@@ -97,13 +102,13 @@ fun AppNavigation() {
             val trackName = backStackEntry.arguments?.getString("trackName")
             val selectedTrack = tracks?.find { it.name == trackName }
             if (selectedTrack != null) {
-                Log.d("MainActivity", "Track found: $selectedTrack")
                 PlayerScreen(track = selectedTrack)
             } else {
                 ErrorScreen("Track not found.")
             }
         }
     }
+
 }
 
 @Composable
@@ -144,6 +149,37 @@ fun PlaylistScreen(tracks: List<Track>, onTrackClick: (Track) -> Unit) {
                 }
             }
         }
+    }
+}
+@Composable
+fun SplashScreen(onNavigateToPlaylist: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        // Image de fond
+        Image(
+            painter = painterResource(id = R.drawable.karaoke_icon), // Remplacez par votre image
+            contentDescription = "Karaoke Background",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Texte du titre
+        Text(
+            text = "Sing With Me",
+            style = MaterialTheme.typography.headlineLarge,
+            color = Color.White,
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp)
+        )
+    }
+
+    // Redirection automatique après 3 secondes
+    LaunchedEffect(Unit) {
+        delay(3000L)
+        onNavigateToPlaylist()
     }
 }
 
