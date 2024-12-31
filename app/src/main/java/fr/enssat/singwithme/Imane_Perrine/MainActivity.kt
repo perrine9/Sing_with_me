@@ -157,7 +157,7 @@ fun SplashScreen(onNavigateToPlaylist: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.TopCenter // Align content towards the top
     ) {
         // Image de fond
         Image(
@@ -167,13 +167,30 @@ fun SplashScreen(onNavigateToPlaylist: () -> Unit) {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Texte du titre
-        Text(
-            text = "Sing With Me",
-            style = MaterialTheme.typography.headlineLarge,
-            color = Color.White,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp)
-        )
+        // Contenu de la page
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 100.dp) // Adjust the position by increasing/decreasing this value
+        ) {
+            // Texte du titre
+            Text(
+                text = "Sing With Me",
+                style = MaterialTheme.typography.headlineLarge,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 16.dp) // Add space below the title
+            )
+
+            // Texte "Are you ready?"
+            Text(
+                text = "Are you ready?",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color(0xFF6200EE), // Purple color
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
     }
 
     // Redirection automatique après 3 secondes
@@ -182,6 +199,8 @@ fun SplashScreen(onNavigateToPlaylist: () -> Unit) {
         onNavigateToPlaylist()
     }
 }
+
+
 
 
 
