@@ -5,10 +5,12 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
 import androidx.annotation.OptIn
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.Button
+import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.ui.Alignment
@@ -16,6 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.unit.dp
+
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.enssat.singwithme.Imane_Perrine.data.KaraokeLine
@@ -28,12 +33,25 @@ import androidx.media3.common.MediaItem
 import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.compose.ui.layout.ContentScale
+
 
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.DefaultLoadControl
 import kotlinx.coroutines.Dispatchers
+import androidx.compose.foundation.Image
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material3.AlertDialogDefaults.shape
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.analytics.AnalyticsListener
+import fr.enssat.singwithme.Imane_Perrine.R
 
 
 import kotlinx.coroutines.delay
@@ -55,6 +73,17 @@ fun PlayerScreen(track: Track) {
 
     // Initialiser ExoPlayer
     val exoPlayer = remember {
+        val renderersFactory = DefaultRenderersFactory(context)
+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
+            .setEnableDecoderFallback(true) //
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS * 4, // Double the max buffer size
+                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+            )
+            .build()
         ExoPlayer.Builder(context).build().apply {
             audioHandler.post {
                 track.mp3Path?.let { mp3Path ->
@@ -75,6 +104,25 @@ fun PlayerScreen(track: Track) {
                                     .build(),
                                 true
                             )
+                            // Ajouter un listener pour surveiller les tampons
+                            addAnalyticsListener(object : AnalyticsListener {
+                                override fun onAudioUnderrun(
+                                    eventTime: AnalyticsListener.EventTime,
+                                    bufferSize: Int,
+                                    bufferSizeMs: Long,
+                                    elapsedSinceLastFeedMs: Long
+                                ) {
+                                    Log.e("PlayerScreen", "Audio underrun: bufferSize=$bufferSize, bufferSizeMs=$bufferSizeMs")
+                                }
+
+                                override fun onDroppedVideoFrames(
+                                    eventTime: AnalyticsListener.EventTime,
+                                    droppedFrames: Int,
+                                    elapsedMs: Long
+                                ) {
+                                    Log.w("PlayerScreen", "Dropped $droppedFrames frames in $elapsedMs ms")
+                                }
+                            })
                             prepare()
                             playWhenReady = true
                         }
@@ -104,7 +152,11 @@ fun PlayerScreen(track: Track) {
         })
 
         onDispose {
-            exoPlayer.release()
+            // Arrêtez d'abord toutes les interactions sur le thread ExoPlayer
+            Handler(Looper.getMainLooper()).post {
+                exoPlayer.stop()
+                exoPlayer.release()
+            }
             audioThread.quitSafely()
         }
     }
@@ -114,7 +166,8 @@ fun PlayerScreen(track: Track) {
         withContext(Dispatchers.IO) { // Opérations lourdes dans un thread IO
             val lyricsContent = track.lyricsPath?.let { playlistFetcher.readLyrics(it) }
             if (!lyricsContent.isNullOrBlank()) {
-                val parsedLyrics = playlistFetcher.parseLyrics(lyricsContent) // Parsing dans le thread IO
+                val parsedLyrics =
+                    playlistFetcher.parseLyrics(lyricsContent) // Parsing dans le thread IO
                 withContext(Dispatchers.Main) { // Mise à jour de l'UI dans le thread principal
                     karaokeLines.value = parsedLyrics
                     Log.d("PlayerScreen", "Lyrics loaded and parsed successfully")
@@ -132,7 +185,8 @@ fun PlayerScreen(track: Track) {
             val currentPosition = exoPlayer.currentPosition
             val lines = karaokeLines.value
 
-            val lineIndex = lines.indexOfLast { it.startTime * 1000 <= currentPosition && currentPosition < it.endTime * 1000 }
+            val lineIndex =
+                lines.indexOfLast { it.startTime * 1000 <= currentPosition && currentPosition < it.endTime * 1000 }
             if (lineIndex != currentLineIndex) {
                 currentLineIndex = lineIndex
             }
@@ -141,37 +195,98 @@ fun PlayerScreen(track: Track) {
             progress = currentLine?.let { line ->
                 val startMs = line.startTime * 1000
                 val endMs = line.endTime * 1000
-                ((currentPosition - startMs).toFloat() / (endMs - startMs).toFloat()).coerceIn(0f, 1f)
+                ((currentPosition - startMs).toFloat() / (endMs - startMs).toFloat()).coerceIn(
+                    0f,
+                    1f
+                )
             } ?: 0f
 
-            delay(500L)
+            delay(400L)
         }
     }
 
     // Affichage UI
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    // Affichage UI
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black) // Optionnel, au cas où l'image ne s'affiche pas
     ) {
-        val currentLine = karaokeLines.value.getOrNull(currentLineIndex)
-        currentLine?.let {
-            KaraokeSimpleText(text = it.text, progress = progress)
-        }
+        // Image de fond couvrant tout l'écran
+        Image(
+            painter = painterResource(id = R.drawable.karaoke_icon),
+            contentDescription = "Karaoke Background",
+            contentScale = ContentScale.Crop, // Pour couvrir tout l'écran
+            modifier = Modifier.fillMaxSize()
+        )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(onClick = { exoPlayer.play() }) {
-                Text("Play")
-            }
-            Button(onClick = { exoPlayer.pause() }) {
-                Text("Pause")
+            // Titre en haut
+            Text(
+                text = "Sing with Me",
+                style = MaterialTheme.typography.h4,
+                color = Color.White,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+
+            // Song title
+            Text(
+                text = track.name,
+                style = MaterialTheme.typography.h5,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            // Artist name
+            Text(
+                text = "By ${track.artist}",
+                style = MaterialTheme.typography.subtitle1,
+                color = Color.LightGray,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                // Progrès de la chanson
+                LinearProgressIndicator(
+                    progress = progress,
+                    color = Color.Magenta,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                )
+
+                // Paroles synchronisées avec le texte en rouge/noir
+                val currentLine = karaokeLines.value.getOrNull(currentLineIndex)
+                currentLine?.let {
+                    KaraokeSimpleText(text = it.text, progress = progress)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+
+
+                // Boutons de lecture et pause
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(onClick = { exoPlayer.play() }) {
+                        Text("Play")
+                    }
+                    Button(onClick = { exoPlayer.pause() }) {
+                        Text("Pause")
+                    }
+                }
             }
         }
     }
 }
-

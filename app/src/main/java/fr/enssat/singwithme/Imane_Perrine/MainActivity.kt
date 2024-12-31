@@ -1,9 +1,11 @@
 package fr.enssat.singwithme.Imane_Perrine
 
+import android.media.Image
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,6 +29,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 
 
 class MainActivity : ComponentActivity() {
@@ -103,22 +108,46 @@ fun AppNavigation() {
 
 @Composable
 fun PlaylistScreen(tracks: List<Track>, onTrackClick: (Track) -> Unit) {
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
     ) {
-        items(tracks) { track ->
-            Button(
-                onClick = { onTrackClick(track) },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                enabled = !track.locked
-            ) {
-                Text(text = "${track.name} - ${track.artist}")
+        // Add the background image
+        Image(
+            painter = painterResource(id = R.drawable.karaoke_icon), // Use the same image resource
+            contentDescription = "Background Image",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            items(tracks) { track ->
+                val textColor = if (track.locked) Color.Black else Color.White // Change text color based on locked state
+                Button(
+                    onClick = { onTrackClick(track) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    enabled = !track.locked,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor  = if (!track.locked) Color(0xFF6200EE) else Color.Transparent // Purple for enabled, transparent for disabled
+                    )
+                ) {
+                    Text(
+                        text = "${track.name} - ${track.artist}",
+                        color = textColor // Dynamically set text color
+                    )
+                }
             }
         }
     }
 }
+
+
 
 @Composable
 fun ErrorScreen(message: String) {
