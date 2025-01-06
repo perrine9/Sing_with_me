@@ -47,11 +47,9 @@ class PlaylistFetcher(private val context: Context) {
         }
     }
 
-
     fun normalizeFileName(fileName: String): String {
         return fileName.replace(" ", "")
     }
-
 
     private fun readTrack(reader: JsonReader): Track {
         var name = ""
@@ -88,20 +86,15 @@ class PlaylistFetcher(private val context: Context) {
         return Track(name, artist, isLocked, path, mp3Path)
     }
 
-
-
-
-
     fun readLyrics(path: String): String {
         val file = File(context.filesDir, "downloads/$path")
         return if (file.exists()) {
-            file.readText() // Retourne le contenu des paroles
+            file.readText()
         } else {
             Log.w("PlaylistFetcher", "File not found: $path")
             "Paroles introuvables."
         }
     }
-
 
     fun parseLyrics(fileContent: String): List<KaraokeLine> {
         val regex = Regex("""\{\s*(\d+):(\d+)\s*\}(.*?)(?=\{\s*\d+:\d+\s*\}|$)""")
@@ -167,19 +160,14 @@ class PlaylistFetcher(private val context: Context) {
         return lines
     }
 
-
     fun downloadFile(url: String, path: String) {
         val downloadsDir = File(context.filesDir, "downloads")
         val file = File(downloadsDir, path)
-
-        // Crée les répertoires parents si nécessaires
-        file.parentFile?.mkdirs()
 
         if (file.exists()) {
             Log.d("PlaylistFetcher", "File already exists at: ${file.absolutePath}")
         } else {
             try {
-                // Télécharge et sauvegarde le fichier
                 OkHttpClient().newCall(Request.Builder().url(url).build()).execute().use { response ->
                     response.body?.byteStream()?.use { inputStream ->
                         file.outputStream().use { outputStream ->
@@ -193,22 +181,4 @@ class PlaylistFetcher(private val context: Context) {
             }
         }
     }
-
-
 }
-
-
-
-
-
-
-/*
-fun main() {
-    val url = "https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/playlist.json"
-    val playlistFetcher = PlaylistFetcher()
-    val tracks = playlistFetcher.fetchPlaylistFromUrl(url)
-
-    tracks?.forEach { track ->
-        println("Track: ${track.name}, Artist: ${track.artist}, Locked: ${track.locked}")
-    }
-}*/

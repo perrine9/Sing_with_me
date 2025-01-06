@@ -1,21 +1,34 @@
 package fr.enssat.singwithme.Imane_Perrine
 
-import android.media.Image
+import android.annotation.SuppressLint
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,14 +40,9 @@ import fr.enssat.singwithme.Imane_Perrine.data.Track
 import fr.enssat.singwithme.Imane_Perrine.Player.PlayerScreen
 import fr.enssat.singwithme.Imane_Perrine.ui.theme.SingWithMeTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import kotlinx.coroutines.delay
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,28 +63,39 @@ fun AppNavigation() {
     val playlistCache = remember { PlaylistCache(context) }
 
     var tracks by remember { mutableStateOf<List<Track>?>(null) }
+    var isCacheMode by remember { mutableStateOf(false) }
+    var isConnected by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        // Fetch cached or online playlist
-        try {
+        isConnected = isNetworkAvailable(context)
+    }
+
+    LaunchedEffect(isConnected) {
+        if (!isConnected) {
             val cachedTracks = playlistCache.getPlaylist()
             if (cachedTracks != null) {
                 tracks = cachedTracks
-                Log.d("MainActivity", "Loaded cached playlist: ${cachedTracks.size}")
-            }
-
-            val fetchedTracks = withContext(Dispatchers.IO) {
-                playlistFetcher.fetchPlaylistFromUrl("https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/playlist.json")
-            }
-            if (fetchedTracks != null) {
-                tracks = fetchedTracks
-                playlistCache.savePlaylist(fetchedTracks)
+                isCacheMode = true
             } else {
-                errorMessage = "Failed to fetch playlist."
+                errorMessage = "No playlist in cache."
             }
-        } catch (e: Exception) {
-            errorMessage = "Error: ${e.message}"
+        } else {
+            try {
+                val fetchedTracks = withContext(Dispatchers.IO) {
+                    playlistFetcher.fetchPlaylistFromUrl("https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/playlist.json")
+                }
+                if (fetchedTracks != null) {
+                    tracks = fetchedTracks
+                    isCacheMode = false
+                    playlistCache.savePlaylist(fetchedTracks)
+                } else {
+                    errorMessage = "Failed to fetch playlist."
+                }
+            } catch (e: Exception) {
+                Log.e("AppNavigation", "Error fetching playlist", e)
+                errorMessage = "Network error. Please try again."
+            }
         }
     }
 
@@ -86,9 +105,23 @@ fun AppNavigation() {
         }
         composable("playlist") {
             if (tracks != null) {
-                PlaylistScreen(tracks!!, onTrackClick = { track ->
-                    navController.navigate("player/${track.name}")
-                })
+                PlaylistScreen(
+                    tracks = tracks!!,
+                    isCacheMode = isCacheMode,
+                    isOnline = isConnected,
+                    onRefreshClick = {
+                        playlistCache.refreshCache(context, playlistCache, { refreshedTracks ->
+                            tracks = refreshedTracks
+                            isCacheMode = false
+                            Toast.makeText(context, "Cache updated!", Toast.LENGTH_SHORT).show()
+                        }, {
+                            Toast.makeText(context, "Cache update failed!", Toast.LENGTH_SHORT).show()
+                        })
+                    },
+                    onTrackClick = { track ->
+                        navController.navigate("player/${track.name}")
+                    }
+                )
             } else if (errorMessage != null) {
                 ErrorScreen(errorMessage!!)
             } else {
@@ -108,122 +141,80 @@ fun AppNavigation() {
             }
         }
     }
+}
 
+@SuppressLint("ServiceCast")
+fun isNetworkAvailable(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val network = connectivityManager.activeNetwork
+    val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+    return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 }
 
 @Composable
-fun PlaylistScreen(tracks: List<Track>, onTrackClick: (Track) -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // Add the background image
-        Image(
-            painter = painterResource(id = R.drawable.karaoke_icon), // Use the same image resource
-            contentDescription = "Background Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+fun PlaylistScreen(
+    tracks: List<Track>,
+    isCacheMode: Boolean,
+    isOnline: Boolean,
+    onRefreshClick: () -> Unit,
+    onTrackClick: (Track) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
         ) {
+            IconButton(onClick = onRefreshClick, modifier = Modifier.size(48.dp)) {
+                Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
+            }
+        }
+
+        if (!isOnline) {
+            Text(
+                text = "Offline mode - Some features may be limited",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(tracks) { track ->
-                val textColor = if (track.locked) Color.Black else Color.White // Change text color based on locked state
                 Button(
                     onClick = { onTrackClick(track) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    enabled = !track.locked,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor  = if (!track.locked) Color(0xFF6200EE) else Color.Transparent // Purple for enabled, transparent for disabled
-                    )
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    enabled = !track.locked
                 ) {
-                    Text(
-                        text = "${track.name} - ${track.artist}",
-                        color = textColor // Dynamically set text color
-                    )
+                    Text(text = "${track.name} - ${track.artist}")
                 }
             }
         }
     }
 }
+
 @Composable
 fun SplashScreen(onNavigateToPlaylist: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black),
-        contentAlignment = Alignment.TopCenter // Align content towards the top
+        modifier = Modifier.fillMaxSize().background(Color.Black),
+        contentAlignment = Alignment.Center
     ) {
-        // Image de fond
-        Image(
-            painter = painterResource(id = R.drawable.karaoke_icon), // Remplacez par votre image
-            contentDescription = "Karaoke Background",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Contenu de la page
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 100.dp) // Adjust the position by increasing/decreasing this value
-        ) {
-            // Texte du titre
-            Text(
-                text = "Sing With Me",
-                style = MaterialTheme.typography.headlineLarge,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 16.dp) // Add space below the title
-            )
-
-            // Texte "Are you ready?"
-            Text(
-                text = "Are you ready?",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color(0xFF6200EE), // Purple color
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
+        Text("Sing With Me", style = MaterialTheme.typography.headlineLarge, color = Color.White)
     }
-
-    // Redirection automatique après 3 secondes
     LaunchedEffect(Unit) {
         delay(3000L)
         onNavigateToPlaylist()
     }
 }
 
-
-
-
-
 @Composable
 fun ErrorScreen(message: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = message,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(16.dp)
-        )
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = message, color = MaterialTheme.colorScheme.error)
     }
 }
 
 @Composable
 fun LoadingScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
 }
