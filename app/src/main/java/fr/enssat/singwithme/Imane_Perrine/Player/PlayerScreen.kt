@@ -60,7 +60,7 @@ import java.io.File
 
 @OptIn(UnstableApi::class)
 @Composable
-fun PlayerScreen(track: Track) {
+fun PlayerScreen(track: Track, onNavigateBack: () -> Unit) {
     val context = LocalContext.current
     val playlistFetcher = remember { PlaylistFetcher(context) }
     var currentLineIndex by remember { mutableStateOf(0) }
@@ -206,7 +206,6 @@ fun PlayerScreen(track: Track) {
     }
 
     // Affichage UI
-    // Affichage UI
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -272,8 +271,6 @@ fun PlayerScreen(track: Track) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-
-
                 // Boutons de lecture et pause
                 Row(
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -285,6 +282,12 @@ fun PlayerScreen(track: Track) {
                     Button(onClick = { exoPlayer.pause() }) {
                         Text("Pause")
                     }
+                }
+
+                // Bouton Retour
+                Spacer(modifier = Modifier.height(32.dp))
+                Button(onClick = { onNavigateBack() }) {
+                    Text("Retour à l'accueil")
                 }
             }
         }

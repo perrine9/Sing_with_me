@@ -164,21 +164,33 @@ class PlaylistFetcher(private val context: Context) {
         val downloadsDir = File(context.filesDir, "downloads")
         val file = File(downloadsDir, path)
 
-        if (file.exists()) {
-            Log.d("PlaylistFetcher", "File already exists at: ${file.absolutePath}")
-        } else {
-            try {
-                OkHttpClient().newCall(Request.Builder().url(url).build()).execute().use { response ->
-                    response.body?.byteStream()?.use { inputStream ->
-                        file.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
+        Log.d("DownloadFile", "downloadsDir path: ${downloadsDir.absolutePath}")
+        Log.d("DownloadFile", "File path: ${file.absolutePath}")
+
+        try {
+            // Vérifiez si le fichier existe déjà
+            if (file.exists()) {
+                Log.d("DownloadFile", "File already exists")
+                return
+            }
+
+            // Créez les dossiers nécessaires
+            file.parentFile?.mkdirs()
+            Log.d("DownloadFile", "Parent directories created")
+
+            // Téléchargez le fichier
+            OkHttpClient().newCall(Request.Builder().url(url).build()).execute().use { response ->
+                response.body?.byteStream()?.use { inputStream ->
+                    file.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
                     }
                 }
-                Log.d("PlaylistFetcher", "File successfully saved at: ${file.absolutePath}")
-            } catch (e: Exception) {
-                Log.e("PlaylistFetcher", "Error saving file at: ${file.absolutePath}, Error: ${e.message}")
             }
+            Log.d("DownloadFile", "File successfully downloaded")
+        } catch (e: Exception) {
+            Log.e("DownloadFile", "Error downloading file", e)
         }
     }
+
 }
+

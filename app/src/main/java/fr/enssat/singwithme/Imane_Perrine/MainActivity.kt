@@ -135,11 +135,15 @@ fun AppNavigation() {
             val trackName = backStackEntry.arguments?.getString("trackName")
             val selectedTrack = tracks?.find { it.name == trackName }
             if (selectedTrack != null) {
-                PlayerScreen(track = selectedTrack)
+                PlayerScreen(
+                    track = selectedTrack,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             } else {
                 ErrorScreen("Track not found.")
             }
         }
+
     }
 }
 
