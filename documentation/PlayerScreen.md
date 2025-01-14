@@ -1,14 +1,6 @@
 # PlayerScreen - README
 
-La fonction `PlayerScreen` permet de créer une interface utilisateur pour la lecture d'une chanson avec synchronisation des paroles en format karaoké. Elle utilise ExoPlayer pour lire le fichier audio, tout en affichant les paroles qui se synchronisent avec l'audio, offrant ainsi une expérience immersive de chant.
-
-## Fonctionnalités
-
-- **Lecture Audio avec ExoPlayer** : La fonction utilise ExoPlayer pour lire des fichiers MP3 depuis le stockage local.
-- **Synchronisation des Paroles** : Les paroles de la chanson sont chargées et synchronisées avec la musique, chaque ligne de paroles étant affichée au moment précis où elle doit être chantée.
-- **Interface Utilisateur** : Affichage des informations sur la chanson, y compris le titre, l'artiste, et les paroles en temps réel. Les utilisateurs peuvent lire, mettre en pause, ou revenir à l'écran d'accueil.
-- **Gestion de la Progression** : Un indicateur de progression est utilisé pour afficher la progression de la chanson en fonction du temps écoulé et de la position actuelle des paroles.
-- **Gestion des Erreurs** : Les erreurs de lecture audio, ainsi que les problèmes liés aux fichiers de paroles, sont enregistrées pour un diagnostic facile.
+La fonction `PlayerScreen` permet de créer une interface utilisateur pour la lecture d'une chanson avec synchronisation des paroles en format karaoké. Elle utilise ExoPlayer pour lire le fichier audio.
 
 ## Composants
 
@@ -46,4 +38,3 @@ La gestion des erreurs repose sur la journalisation des événements dans les lo
 - **Erreur de lecture audio** : En cas d'erreur de lecture, l'erreur est capturée par `Player.Listener` et un message est loggé.
 
 Ces erreurs sont affichées dans le journal Android pour une analyse plus approfondie et une résolution rapide.
-yer Screen 
