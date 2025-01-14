@@ -26,10 +26,3 @@ Fonction Composable principale pour afficher du texte synchronisé.
 2. **Calcul de la largeur du texte lu :**
     - Utilisation de `Modifier.onSizeChanged` pour obtenir la largeur totale du texte.
     - Application de `Modifier.drawWithContent` pour découper dynamiquement la portion visible en fonction de `progress`.
-
-## Exemple d'utilisation
-KaraokeSimpleText(text = "When you were here before", progress = 0.5f)
-Dans cet exemple, la moitié du texte sera affichée en noir pour représenter une progression de 50%.
-
-## Utilisation dans le projet
-La fonction `KaraokeSimpleText` est essentielle pour créer une expérience visuelle immersive et dynamique dans une application de karaoké. Elle permet de synchroniser visuellement le texte avec l'audio pour offrir une interaction fluide.
