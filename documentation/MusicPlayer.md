@@ -32,31 +32,7 @@ Classe principale permettant la lecture audio.
     - **Paramètre :**
         - `onProgressUpdate` : Callback appelé avec la position actuelle.
 
-## Exemple d'utilisation
 
-### Initialisation
-```kotlin
-val musicPlayer = MusicPlayer(context)
-musicPlayer.initializePlayer(uri) {
-    // Callback lorsque le lecteur est prêt
-    println("Player is ready!")
-}
-```
-
-### Contrôle de la lecture
-```kotlin
-musicPlayer.play()  // Démarrer la lecture
-musicPlayer.pause() // Mettre en pause
-musicPlayer.stop()  // Arrêter
-musicPlayer.release() // Libérer les ressources
-```
-
-### Suivi du progrès
-```kotlin
-musicPlayer.trackProgress { progress ->
-    println("Progression actuelle : $progress ms")
-}
-```
 
 ## Utilisation dans le projet
 Le `MusicPlayer` est un composant clé pour synchroniser l'audio avec les paroles affichées à l'écran dans l'application de karaoké.
