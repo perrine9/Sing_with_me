@@ -17,7 +17,7 @@ Sing With Me est une application Android de karaoké interactive permettant de l
 Voici la structure des fichiers du projet, leur rôle et leur documentation  :
 
 - Data : 
-  - Karaoké Parser : fichier permettant de générer l'affichage des paroles.
+  - [Karaoké Parser](https://github.com/perrine9/Sing_with_me/blob/test/documentation/Track.md) : fichier permettant de générer l'affichage des paroles.
   - Music Player : fichier permettant de gérer la musique.
   - Playlist Cache : fichier permetant de gérer la mise en cache de la playlist et de la musique. 
   - Track : fichier permettant de télécharger et de lire les musiques ainsi que les paroles. 
