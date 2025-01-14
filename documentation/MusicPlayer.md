@@ -3,9 +3,8 @@
 ## Description
 La classe `MusicPlayer` est responsable de la lecture audio dans l'application de karaoké. Elle utilise **ExoPlayer** pour gérer les fichiers audio et fournit des fonctionnalités essentielles comme la lecture, la pause, et le suivi du progrès de la lecture.
 
-## Structure des classes
+## Music Player 
 
-### MusicPlayer
 Classe principale permettant la lecture audio.
 
 **Propriétés :**
@@ -32,7 +31,4 @@ Classe principale permettant la lecture audio.
     - **Paramètre :**
         - `onProgressUpdate` : Callback appelé avec la position actuelle.
 
-
-
-## Utilisation dans le projet
 Le `MusicPlayer` est un composant clé pour synchroniser l'audio avec les paroles affichées à l'écran dans l'application de karaoké.
