@@ -2,18 +2,7 @@
 
 La fonction `PlayerScreen` permet de créer une interface utilisateur pour la lecture d'une chanson avec synchronisation des paroles en format karaoké. Elle utilise ExoPlayer pour lire le fichier audio.
 
-## Composants
-
-### 1. Classe de données `Track`
-
-La classe `Track` représente un morceau de musique et contient les propriétés suivantes :
-
-- `name` : Le nom du morceau.
-- `artist` : L'artiste du morceau.
-- `lyricsPath` : Le chemin d'accès au fichier des paroles (si disponible).
-- `mp3Path` : Le chemin d'accès au fichier MP3 (si disponible).
-
-### 2. Fonction `PlayerScreen`
+### Fonction `PlayerScreen`
 
 La fonction `PlayerScreen` crée une interface utilisateur avec les éléments suivants :
 
