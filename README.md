@@ -7,9 +7,7 @@ Sing With Me est une application Android de karaoké interactive permettant de l
 ## Fonctionnalités principales
 - 🎵 **Liste des chansons** : Affiche une liste de chansons disponibles pour le karaoké.
 - 📜 **Paroles synchronisées** : Les paroles sont affichées et mises à jour en temps réel avec l'audio.
-- ⏯️ **Boutons de lecture, pause et arrêt** : Contrôle complet pour jouer, mettre en pause ou arrêter la musique.
-- 🎨 **Interface personnalisable** : Inclut des arrière-plans thématiques, des couleurs attrayantes et une interface réactive.
-- 🚀 **Écran d'accueil animé** : Présente une introduction visuelle de l'application avant d'accéder à la liste des chansons.
+- ⏯️ **Boutons de lecture, pause et arrêt** : Contrôle complet pour jouer, mettre en pause ou revenir à l'écran d'acceuil.
 - 🌐 **Mode hors ligne et cache** : Si l'appliation à déjà été utilisée en étant en ligne, il est par la suite possible de l'utiliser tout en étant hors-ligne. De plus, il est aussi possible de rafraichir le cache. 
 
 ---
@@ -43,12 +41,5 @@ Voici la structure des fichiers du projet, leur rôle et leur documentation  :
 Voici la structure des fichiers du projet et leur rôle : https://github.com/perrine9/Sing_with_me/blob/test/apk/debug/app-debug.apk
 
 ---
-
-## Technologies utilisées et dépendances 
-- **Kotlin** : Langage principal pour le développement Android.
-- **Jetpack Compose** : Framework UI moderne pour concevoir les écrans.
-- **ExoPlayer** : Bibliothèque pour gérer la lecture audio.
-- **Coroutines** : Gestion asynchrone pour le téléchargement et la lecture.
-- **Material Design 3** : Pour une interface moderne et intuitive.
-
+**Attention** le projet à été testé et est fonctionel avec l'émulateur par défaut d'Android Studio : Medium Phone API 35. 
 ---
