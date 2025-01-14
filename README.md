@@ -15,7 +15,7 @@ Ce projet à été fait dans le cadre du cours d'Android d'INFO3 à l'ENSSAT. Le
 ---
 
 ## Structure du projet
-Voici la structure des fichiers du projet, leur rôle et leur documentation  :
+Voici la structure des fichiers du projet, leur rôle et leur [documentation](https://github.com/perrine9/Sing_with_me/blob/test/documentation) :
 
 - Data : 
   - [Karaoké Parser](https://github.com/perrine9/Sing_with_me/blob/test/documentation/KaraokeParser.md) : fichier permettant de générer l'affichage des paroles.
