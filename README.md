@@ -1,6 +1,8 @@
-# Sing With Me
+# Sing With Me - Imane et Perrine
 
-Sing With Me est une application Android de karaoké interactive permettant de lire des chansons avec des paroles synchronisées tout en offrant une interface visuellement attrayante.
+Sing With Me est une application Android de karaoké interactif permettant de lire des chansons avec les paroles synchronisées.
+
+Ce projet à été fait dans le cadre du cours d'Android d'INFO3 à l'ENSSAT. Le sujet est disponible [ici](https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/index.html).
 
 ---
 
@@ -35,9 +37,9 @@ Voici la structure des fichiers du projet, leur rôle et leur documentation  :
    git clone https://github.com/perrine9/Sing_with_me/
 2. Ouvrez le projet dans Android Studio.
 3. Synchronisez les dépendances avec Gradle.
-4. Construisez et exécutez le projet sur un émulateur ou un appareil physique.
+4. Effectuer un build et vous pourrez Run le projet sur votre appareil Android ou une émulateur.
 
-## Lien vers APK 
+## Lien vers l'APK 
 Voici la structure des fichiers du projet et leur rôle : https://github.com/perrine9/Sing_with_me/blob/test/apk/debug/app-debug.apk
 
 ---
