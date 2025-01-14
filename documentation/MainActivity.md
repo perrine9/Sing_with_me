@@ -20,8 +20,8 @@ Le composant `AppNavigation` gère la navigation entre les différents écrans d
   - **"player/{trackName}"** : L'écran de lecture de la chanson (PlayerScreen) où `{trackName}` est un argument dynamique pour passer le nom de la chanson.
 
 - **Navigation conditionnelle** :
-  - La navigation prend en compte l'état du réseau et le cache. Si l'utilisateur est hors ligne, il verra un message d'erreur ou les chansons disponibles en mode hors ligne.
-  - Si l'utilisateur est en ligne, la playlist est récupérée via une requête réseau et la cache est mise à jour.
+  - La navigation prend en compte l'état du réseau et le cache. Si l'utilisateur est hors ligne, il verra un message d'erreur (si le cache est vide) ou les chansons disponibles en mode hors ligne ainsi qu'un message indiquant que nous sommes en mode hors ligne.
+  - Si l'utilisateur est en ligne, la playlist est récupérée via une requête réseau et la cache est chargée s'il ne l'était pas. L'utilisateur peut aussi décidé de recharger le cache en appuyant sur bouton refresh. Si la requête se déroule sans erreur un message l'indiquera. Attention, la mise à jour peut prendre un peu de temps.
 
 ### 3. **Écrans Principaux de l'application**
 
@@ -29,8 +29,8 @@ L'application se compose de trois écrans principaux qui sont rendus conditionne
 
 #### 1. **SplashScreen**
 
-- **Fonction** : Affiche un écran de démarrage avec le texte "Sing With Me" et une transition après un délai de 3 secondes vers l'écran de playlist.
-- **Utilisation de `LaunchedEffect`** : Ce délai est géré avec `LaunchedEffect` pour exécuter une action après un délai.
+- Affiche un écran de démarrage avec le texte "Sing With Me" et une transition après un délai de 3 secondes vers l'écran de playlist.
+- Ce délai est géré avec `LaunchedEffect` pour exécuter une action après un délai.
 
 #### 2. **PlaylistScreen**
 
@@ -50,7 +50,7 @@ L'application se compose de trois écrans principaux qui sont rendus conditionne
 
 #### 4. **ErrorScreen**
 
-- **Fonction** : Affiche un message d'erreur, comme un problème réseau ou l'absence de playlist en cache.
+- **Fonction** : Affiche un message d'erreur s'il y a un problème réseau ou l'absence de playlist en cache.
 
 #### 5. **LoadingScreen**
 
