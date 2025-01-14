@@ -36,9 +36,3 @@ val regex = Regex("""\{\s*(\d+):(\d+(?:\.\d+)?)\s*\}(.*?)(?:\{\s*(\d+):(\d+(?:\.
 Si une ligne ne correspond pas au format attendu, un message d'avertissement est enregistré dans les logs Android :
 Log.w("KaraokeParser", "No match for line: $line")
 
-### Sortie
-voici un exemple de sortie de cette fonction : 
-[
-KaraokeLine(startTime=19.0, endTime=20.0, text="When you were here before"),
-KaraokeLine(startTime=23.0, endTime=25.0, text="Couldn't look you in the eye")
-]
