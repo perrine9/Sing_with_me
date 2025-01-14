@@ -2,15 +2,6 @@
 
 La classe `PlaylistFetcher` offre des fonctionnalités pour récupérer des playlists depuis une URL, télécharger les fichiers associés (comme les MP3 et les paroles), et analyser le contenu des paroles pour une lecture au format karaoké. Elle permet de récupérer, gérer et manipuler des morceaux de musique, y compris le téléchargement des fichiers associés et l'analyse des paroles avec des minutages pour une lecture synchronisée.
 
-## Fonctionnalités
-
-- **Récupérer la Playlist depuis une URL** : La classe permet de récupérer une playlist au format JSON depuis une URL donnée. Chaque morceau de la playlist contient des informations comme le nom du morceau, l'artiste, et les chemins d'accès aux fichiers des paroles et MP3.
-- **Télécharger les fichiers MP3 et Paroles** : Les fichiers MP3 et de paroles associés sont automatiquement téléchargés dans le stockage local lors de la récupération de la playlist.
-- **Normaliser les noms de fichiers** : Les noms de fichiers sont normalisés en supprimant les espaces pour garantir un bon traitement des fichiers.
-- **Analyser les paroles pour la lecture au format Karaoké** : Les paroles sont analysées et formatées avec des minutages pour afficher les paroles synchronisées avec la musique, avec la possibilité d'ignorer les lignes de métadonnées ou vides.
-- **Lire les paroles** : Les paroles téléchargées peuvent être lues à partir du stockage local si elles sont disponibles.
-- **Journalisation des erreurs** : Les erreurs pendant des opérations comme le téléchargement des fichiers ou la récupération de la playlist sont enregistrées pour le dépannage.
-
 ## Composants
 
 ### 1. Classe de données `Track`
