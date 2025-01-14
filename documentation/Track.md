@@ -1,74 +1,49 @@
-# Documentation du Projet - PlaylistFetcher
+# PlaylistFetcher - README
 
-## Description
+La classe `PlaylistFetcher` offre des fonctionnalités pour récupérer des playlists depuis une URL, télécharger les fichiers associés (comme les MP3 et les paroles), et analyser le contenu des paroles pour une lecture au format karaoké. Elle permet de récupérer, gérer et manipuler des morceaux de musique, y compris le téléchargement des fichiers associés et l'analyse des paroles avec des minutages pour une lecture synchronisée.
 
-Ce projet permet de gérer une playlist de musique en téléchargeant des fichiers MP3 et des paroles, tout en permettant de lire et d'analyser ces fichiers. Il inclut une classe principale `PlaylistFetcher`, qui permet de récupérer une playlist depuis une URL, télécharger des fichiers associés, et analyser les paroles pour une lecture de type karaoké.
+## Fonctionnalités
 
-## Structure des classes
+- **Récupérer la Playlist depuis une URL** : La classe permet de récupérer une playlist au format JSON depuis une URL donnée. Chaque morceau de la playlist contient des informations comme le nom du morceau, l'artiste, et les chemins d'accès aux fichiers des paroles et MP3.
+- **Télécharger les fichiers MP3 et Paroles** : Les fichiers MP3 et de paroles associés sont automatiquement téléchargés dans le stockage local lors de la récupération de la playlist.
+- **Normaliser les noms de fichiers** : Les noms de fichiers sont normalisés en supprimant les espaces pour garantir un bon traitement des fichiers.
+- **Analyser les paroles pour la lecture au format Karaoké** : Les paroles sont analysées et formatées avec des minutages pour afficher les paroles synchronisées avec la musique, avec la possibilité d'ignorer les lignes de métadonnées ou vides.
+- **Lire les paroles** : Les paroles téléchargées peuvent être lues à partir du stockage local si elles sont disponibles.
+- **Journalisation des erreurs** : Les erreurs pendant des opérations comme le téléchargement des fichiers ou la récupération de la playlist sont enregistrées pour le dépannage.
 
-### `Track`
+## Composants
 
-Représente une chanson dans la playlist.
+### 1. Classe de données `Track`
 
-#### Propriétés :
-- **`name`** : Nom de la chanson.
-- **`artist`** : Nom de l'artiste.
-- **`locked`** : Indique si la chanson est verrouillée.
-- **`lyricsPath`** : Chemin du fichier de paroles.
-- **`mp3Path`** : Chemin du fichier MP3.
+La classe de données `Track` représente un morceau de musique et contient les propriétés suivantes:
 
-### `PlaylistFetcher`
+- `name` : Le nom de la chanson.
+- `artist` : L'artiste de la chanson.
+- `locked` : Une valeur booléenne indiquant si le morceau est verrouillé.
+- `lyricsPath` : Le chemin d'accès au fichier des paroles (si disponible).
+- `mp3Path` : Le chemin d'accès au fichier MP3 (si disponible).
 
-Classe principale permettant de récupérer la playlist, de télécharger les fichiers, et d'analyser les paroles.
+### 2. Classe `PlaylistFetcher`
 
-#### Propriété :
-- **`context`** : Contexte Android nécessaire pour les opérations de fichiers.
+La classe `PlaylistFetcher` est responsable de la récupération de la playlist, du téléchargement des fichiers et de l'analyse des paroles. Elle contient les méthodes suivantes:
 
-#### Méthodes :
+- `fetchPlaylistFromUrl(urlString: String)` : Récupère une playlist depuis une URL donnée et renvoie une liste d'objets `Track`.
+- `normalizeFileName(fileName: String)` : Supprime les espaces du nom de fichier pour le rendre adapté au stockage local.
+- `readTrack(reader: JsonReader)` : Lit un morceau depuis une réponse JSON et renvoie un objet `Track`.
+- `readLyrics(path: String)` : Lit le contenu d'un fichier de paroles stocké localement et renvoie le texte.
+- `parseLyrics(fileContent: String)` : Analyse le contenu des paroles pour extraire les lignes avec minutages pour la lecture au format karaoké.
+- `downloadFile(url: String, path: String)` : Télécharge un fichier (MP3 ou paroles) depuis une URL vers le stockage local.
 
-- **`fetchPlaylistFromUrl(urlString: String): List<Track>?`** : 
-  - Récupère la playlist depuis l'URL fournie et renvoie une liste d'objets `Track`.
-  - Paramètre : **`urlString: String`** , L'URL du fichier JSON contenant les informations de la playlist. Ce fichier doit suivre un format spécifique où chaque chanson est représentée par un objet avec les propriétés `name`, `artist`, `locked` et `path`.
-  - Retour : une liste de `Track` (`List<Track>`) si la récupération de la playlist est réussie, ou `null` en cas d'échec (par exemple, si l'URL est invalide ou si la réponse du serveur est erronée).
-  - Détails : 
-    1. **Création de la requête HTTP**
-    La fonction utilise la bibliothèque **OkHttp** pour envoyer une requête HTTP GET à l'URL spécifiée (`urlString`). La réponse est ensuite traitée.
-    2. **Lecture du JSON**
-    Si la requête est réussie (code de statut HTTP 200), la fonction parse le corps de la réponse en utilisant un `JsonReader`. Elle attend un tableau JSON contenant des objets représentant des chansons.
-    3. **Conversion des données**
-    Chaque objet dans le tableau JSON est converti en un objet `Track` à l'aide de la fonction interne `readTrack`.
-       - Pour chaque chanson, les informations suivantes sont extraites :
-           - **`name`** : Nom de la chanson
-           - **`artist`** : Nom de l'artiste
-           - **`locked`** : Indique si la chanson est verrouillée
-             - **`path`** : Chemin du fichier de paroles au format `.md`
-       Si la chanson n'est pas verrouillée (`locked = false`), les fichiers MP3 et les paroles sont téléchargés.
-    4. **Téléchargement des fichiers**
-    La fonction génère deux URL basées sur le chemin de la chanson pour récupérer les fichiers :
-       - **Fichier de paroles** : URL construite avec le `path` de la chanson.
-         - **Fichier MP3** : URL construite en remplaçant `.md` par `.mp3` dans le `path`.
-    Les fichiers sont ensuite téléchargés et enregistrés localement via la fonction `downloadFile`.
-    5. **Gestion des erreurs**
-    En cas d'erreur pendant la requête ou le parsing du JSON, la fonction capture l'exception et retourne `null`. Des messages d'erreur sont enregistrés dans les logs pour faciliter le débogage.
-    6. **Retour de la playlist**
-    Si tout se passe bien, une liste d'objets `Track` est retournée, représentant toutes les chansons de la playlist. Si une erreur se produit à n'importe quelle étape, `null` est retourné.
+## Gestion des erreurs
 
-- **`normalizeFileName(fileName: String): String`** : Normalise le nom du fichier en supprimant les espaces.
-  - La fonction `normalizeFileName` prend en entrée un nom de fichier sous forme de chaîne de caractères et renvoie une version normalisée de ce nom de fichier où tous les espaces ont été supprimés. Cette fonction est particulièrement utile pour garantir que les noms de fichiers respectent une convention ou pour faciliter le traitement des fichiers dans un environnement de stockage où les espaces peuvent poser problème.
-  - Paramètre : **`fileName: String`** , le nom du fichier à normaliser, sous forme de chaîne de caractères.
-  - Retour : une nouvelle chaîne de caractères représentant le nom du fichier avec tous les espaces supprimés.
-  - Détails de l'implémentation :
-    1. La fonction utilise la méthode `replace` de la classe `String` pour supprimer tous les espaces dans le nom du fichier. Cela permet de garantir que les noms de fichiers sont cohérents et peuvent être utilisés sans ambiguïté dans les systèmes qui n'acceptent pas les espaces dans les noms de fichiers.
-    2. La fonction remplace chaque espace par une chaîne vide, ce qui supprime effectivement tous les espaces dans le nom du fichier.
+La gestion des erreurs dans `PlaylistFetcher` repose principalement sur la journalisation des erreurs dans les logs afin de faciliter le diagnostic des problèmes. Voici les principaux types d'erreurs traitées:
 
-- **`readTrack(reader: JsonReader): Track`** : 
-  - Lit un objet `Track` à partir d'un `JsonReader`.
-  - Paramètres : **`fileName: String`**, Le nom du fichier à normaliser, sous forme de chaîne de caractères.
+- **Échec de récupération de la playlist** : Si la requête HTTP échoue ou retourne un statut d'erreur, un message d'erreur est enregistré avec le code de réponse HTTP.
+- **Erreur lors du téléchargement de fichiers** : Si un fichier ne peut pas être téléchargé (MP3 ou paroles), une exception est capturée et un message d'erreur est enregistré avec les détails de l'exception.
+- **Fichiers manquants** : Lorsque des fichiers de paroles sont demandés mais non trouvés dans le stockage local, un message d'avertissement est affiché pour informer l'utilisateur.
+- **Échec de l'analyse des paroles** : Si le format des paroles est incorrect ou que des informations essentielles (comme le minutage) ne peuvent pas être extraites, un avertissement est émis et la ligne concernée est ignorée.
 
-
-- **`readLyrics(path: String): String`** : Lit les paroles depuis un fichier stocké localement et retourne le contenu.
-- **`parseLyrics(fileContent: String): List<KaraokeLine>`** : Parse les paroles pour en extraire les lignes de karaoké avec leurs temps de début et de fin.
-- **`downloadFile(url: String, path: String)`** : Télécharge un fichier à partir de l'URL spécifiée et le sauvegarde sous le chemin spécifié.
+Ces messages d'erreur et d'avertissement sont affichés dans le journal Android pour une analyse ultérieure. Cela permet de suivre et corriger les erreurs en cours d'exécution.
 
 
 
