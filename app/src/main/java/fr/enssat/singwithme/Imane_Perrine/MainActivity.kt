@@ -163,7 +163,19 @@ fun PlaylistScreen(
     onRefreshClick: () -> Unit,
     onTrackClick: (Track) -> Unit
 ) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredTracks = tracks.filter {
+        it.name.contains(searchQuery, ignoreCase = true) || it.artist.contains(searchQuery, ignoreCase = true)
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        TextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("Search music...") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
@@ -182,7 +194,7 @@ fun PlaylistScreen(
         }
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(tracks) { track ->
+            items(filteredTracks) { track ->
                 Button(
                     onClick = { onTrackClick(track) },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
