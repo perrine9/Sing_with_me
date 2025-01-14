@@ -10,8 +10,7 @@ Sing With Me est une application Android de karaoké interactive permettant de l
 - ⏯️ **Boutons de lecture, pause et arrêt** : Contrôle complet pour jouer, mettre en pause ou arrêter la musique.
 - 🎨 **Interface personnalisable** : Inclut des arrière-plans thématiques, des couleurs attrayantes et une interface réactive.
 - 🚀 **Écran d'accueil animé** : Présente une introduction visuelle de l'application avant d'accéder à la liste des chansons.
-- ![image](https://github.com/user-attachments/assets/9490ffda-2958-4106-979e-7e8186b8dc91)
-**Mode hors ligne et cache** : Si l'appliation à déjà été utilisée en étant en ligne, il est par la suite possible de l'utiliser tout en étant hors-ligne. De plus, il est aussi possible de rafraichir le cache. 
+- 🌐 **Mode hors ligne et cache** : Si l'appliation à déjà été utilisée en étant en ligne, il est par la suite possible de l'utiliser tout en étant hors-ligne. De plus, il est aussi possible de rafraichir le cache. 
 
 ---
 
