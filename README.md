@@ -14,19 +14,25 @@ Sing With Me est une application Android de karaoké interactive permettant de l
 ---
 
 ## Structure du projet
-Voici la structure des fichiers du projet et leur rôle :
+Voici la structure des fichiers du projet, leur rôle et leur documentation  :
 
+- Data : 
+  - Karaoké Parser : fichier permettant de générer l'affichage des paroles.
+  - Music Player : fichier permettant de gérer la musique.
+  - Playlist Cache : fichier permetant de gérer la mise en cache de la playlist et de la musique. 
+  - Track : fichier permettant de télécharger et de lire les musiques ainsi que les paroles. 
 
+- Player :
+  - Karaoke Simple Text : 
+  - Karaoke Text : 
+  - Player Screen : 
 
+- Main Activity : 
 
----
-
-## Technologies utilisées
-- **Kotlin** : Langage principal pour le développement Android.
-- **Jetpack Compose** : Framework UI moderne pour concevoir les écrans.
-- **ExoPlayer** : Bibliothèque pour gérer la lecture audio.
-- **Coroutines** : Gestion asynchrone pour le téléchargement et la lecture.
-- **Material Design 3** : Pour une interface moderne et intuitive.
+- Theme : 
+  - Color 
+  - Theme : 
+  - Typography : 
 
 ---
 
@@ -39,24 +45,15 @@ Voici la structure des fichiers du projet et leur rôle :
 4. Construisez et exécutez le projet sur un émulateur ou un appareil physique.
 
 ## Lien vers APK 
-Voici la structure des fichiers du projet et leur rôle :
+Voici la structure des fichiers du projet et leur rôle : https://github.com/perrine9/Sing_with_me/blob/test/apk/debug/app-debug.apk
 
-## Architecture
-L’application est composée de plusieurs écrans :
-1. **Splash Screen** : Présente l'application avant la liste des chansons ( dure 3 secs).
-2. **Playlist Screen** : Affiche une liste de chansons disponibles. ( ceux qui sont jouables en mauve)
-3. **Player Screen** : Permet de lire une chanson avec les paroles synchronisées( avec des boutons de play et pause aussi).
+---
 
-## Fonctionnalités techniques
+## Technologies utilisées
+- **Kotlin** : Langage principal pour le développement Android.
+- **Jetpack Compose** : Framework UI moderne pour concevoir les écrans.
+- **ExoPlayer** : Bibliothèque pour gérer la lecture audio.
+- **Coroutines** : Gestion asynchrone pour le téléchargement et la lecture.
+- **Material Design 3** : Pour une interface moderne et intuitive.
 
-1. Les paroles sont synchronisées avec l'audio à l'aide d'ExoPlayer et d'un algorithme pour calculer le progrès en fonction du temps. 
-2. Les fichiers de musique et les paroles sont stockés localement après téléchargement pour un accès rapide.
-3. Une mise en cache efficace permet de réduire les temps de chargement.
-
-
-
-## Lien vers la documentation complète
-[Documentation complète](https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/index.html)
-
-## Téléchargement de l'APK
-[Téléchargez l'APK](https://gcpa-enssat-24-25.s3.eu-west-3.amazonaws.com/SingWithMe.apk)
+---
